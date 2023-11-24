@@ -1,16 +1,15 @@
 #include "web_server.h"
 
-
 web_server::web_server(){
     users = new http_parser[2000];
     char path[200];
     getcwd(path, 200);
-    // /home/yuhang/tiny_webserver/web_server.cpp
+    // /home/yuhang/tiny_webserver/
     char root[6] = "/root";
-    m_root = (char*)malloc(sizeof(path) + sizeof(root) + 1);
+    m_root = (char*)malloc(strlen(path) + strlen(root) + 1);
     strcpy(m_root, path);
     strcat(m_root, root);
-    // /home/yuhang/tiny_webserver/web_server.cpp/root
+    // /home/yuhang/tiny_webserver/root
 }
 
 web_server::~web_server(){
@@ -40,8 +39,8 @@ void web_server::event_listen(){
     }
     listen(m_listenfd, 64);
     m_epollfd = epoll_create(64);
-    addfd(m_epollfd, m_listenfd, EPOLLIN);
     http_parser::m_epollfd = m_epollfd;
+    addfd(m_epollfd, m_listenfd, EPOLLIN);
 }
 
 void web_server::event_loop(){

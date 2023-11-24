@@ -12,6 +12,7 @@ public:
     void addfd(int epfd, int fd, __uint32_t event);
     void deal_new_connect();
     void deal_read_event(int socket);
+    
 public:
     int m_port;
     int m_listenfd;
