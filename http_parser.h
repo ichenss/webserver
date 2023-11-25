@@ -101,6 +101,7 @@ public:
     LINE_STATUS parse_line();
     void close_conn(bool real_close);
     void do_write();
+    void fdmode(int epfd, int fd, __uint32_t events);
     HTTP_CODE do_request();
     
 

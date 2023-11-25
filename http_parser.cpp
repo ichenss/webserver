@@ -361,7 +361,16 @@ void http_parser::do_write(){
         return ;
     }
     temp = writev(m_socket, m_iv, m_iv_count);
+    fdmode(m_epollfd, m_socket, EPOLLIN);
     return ;
+}
+
+
+void http_parser::fdmode(int epfd, int fd, __uint32_t events){
+    epoll_event event;
+    event.events = events | EPOLLONESHOT;
+    event.data.fd = fd;
+    epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event);
 }
 
 void http_parser::close_conn(bool real_close){
@@ -377,7 +386,7 @@ void http_parser::close_conn(bool real_close){
 void http_parser::addfd(int epfd, int fd, __uint32_t event){
     struct epoll_event ev;
     ev.data.fd = fd;
-    ev.events = event;
+    ev.events = event | EPOLLONESHOT;
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
 }
 

@@ -16,10 +16,11 @@ web_server::~web_server(){
 
 }
 
-void web_server::init(int port){
+void web_server::init(int port, int thread_num){
     m_port = port;
     m_listenfd = -1;
     m_epollfd = -1;
+    m_thread_num = thread_num;
     memset(events, '\0', sizeof(events));
 }
 
@@ -80,5 +81,9 @@ void web_server::deal_new_connect(){
 }
 
 void web_server::deal_read_event(int socket){
-    users[socket].read_once();
+    m_pool->append(users + socket);
+}
+
+void web_server::thread_pool(){
+    m_pool = new threadpool<http_parser>(m_thread_num);
 }
