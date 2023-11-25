@@ -124,6 +124,7 @@ http_parser::HTTP_CODE http_parser::parser_request_line(char* text){
     }
     // 跳过多余空格
     m_url += strspn(m_url, " ");
+    // HTTP版本信息
     m_version = strpbrk(m_url, " ");
     if (!m_version) return BAD_REQUEST;
     *m_version++ = '\0';
@@ -189,6 +190,7 @@ http_parser::HTTP_CODE http_parser::do_request(){
     printf("HTTP 请求分析完毕，开始处理\n");
     strcpy(m_real_file, server_root);
     int len = strlen(server_root);
+    // 默认连接界面
     if (strlen(m_url) == 1 && m_url[0] == '/'){
         strncpy(m_real_file + len, "/index.html", 200 - len - 1);
     }
@@ -226,6 +228,7 @@ http_parser::LINE_STATUS http_parser::parse_line(){
     return LINE_OPEN;
 }
 
+// 开始封装响应报文
 bool http_parser::process_write(HTTP_CODE ret){
     switch(ret)
     {
@@ -292,6 +295,7 @@ bool http_parser::add_content(const char *content){
     return add_response("%s", content);
 }
 
+// 响应头
 bool http_parser::add_headers(int content_len){
     return add_content_length(content_len) && add_linger() && add_content_type() && add_blank_line();
 }
