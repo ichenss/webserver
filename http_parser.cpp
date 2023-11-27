@@ -34,6 +34,7 @@ void http_parser::init(){
     m_read_idx = 0;
     m_write_idx = 0;
     bytes_to_send = 0;
+    m_state = -1;
     memset(m_read_buf, '\0', 2048);
     memset(m_write_buf, '\0', 1024);
     memset(m_real_file, '\0', 200);
@@ -59,14 +60,14 @@ void http_parser::read_once(){
 void http_parser::process(){
     HTTP_CODE read_ret = process_read();
     if (read_ret == NO_REQUEST){
-
+        fdmode(m_epollfd, m_socket, EPOLLIN);
         return;
     }
     bool write_ret = process_write(read_ret);
     if (!write_ret){
         close_conn(true);
     }
-    do_write();
+    fdmode(m_epollfd, m_socket, EPOLLOUT);
 }
 
 http_parser::HTTP_CODE http_parser::process_read(){
@@ -354,15 +355,15 @@ bool http_parser::add_response(const char* format, ...){
     return true;
 }
 
-void http_parser::do_write(){
+bool http_parser::do_write(){
     int temp = 0;
     if (bytes_to_send == 0){
         init();
-        return ;
+        return true;
     }
     temp = writev(m_socket, m_iv, m_iv_count);
     fdmode(m_epollfd, m_socket, EPOLLIN);
-    return ;
+    return true;
 }
 
 
@@ -386,6 +387,7 @@ void http_parser::close_conn(bool real_close){
 void http_parser::addfd(int epfd, int fd, __uint32_t event){
     struct epoll_event ev;
     ev.data.fd = fd;
+    // EPOLLONESHOT防止一个任务被多个线程处理 one loop per thread
     ev.events = event | EPOLLONESHOT;
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
 }

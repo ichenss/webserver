@@ -88,6 +88,8 @@ public:
 
     int bytes_to_send; // 响应头+响应正文总长
 
+    int m_state;  // 判断读or写事件
+
     static int m_epollfd;  // epfd
     static int m_user_count;
 
@@ -100,7 +102,7 @@ public:
     bool process_write(HTTP_CODE ret);
     LINE_STATUS parse_line();
     void close_conn(bool real_close);
-    void do_write();
+    bool do_write();
     void fdmode(int epfd, int fd, __uint32_t events);
     HTTP_CODE do_request();
     

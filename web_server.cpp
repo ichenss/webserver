@@ -54,6 +54,9 @@ void web_server::event_loop(){
             }else if (events[i].events & EPOLLIN) {
                 // 处理读事件
                 deal_read_event(events[i].data.fd);
+            }else if (events[i].events & EPOLLOUT){
+                // 处理写事件
+                deal_write_event(events[i].data.fd);
             }
         }
     }
@@ -81,7 +84,11 @@ void web_server::deal_new_connect(){
 }
 
 void web_server::deal_read_event(int socket){
-    m_pool->append(users + socket);
+    m_pool->append(users + socket, 0);
+}
+
+void web_server::deal_write_event(int socket){
+    m_pool->append(users + socket, 1);
 }
 
 void web_server::thread_pool(){

@@ -8,7 +8,7 @@ class threadpool{
 public:
     threadpool(int thread_number = 8, int max_request = 10000);
     ~threadpool();
-    bool append(T* request);
+    bool append(T* request, int state);
 
 private:
     int m_thread_number;  //线程池中线程个数
@@ -53,12 +53,13 @@ threadpool<T>::~threadpool(){
 }
 
 template <typename T>
-bool threadpool<T>::append(T* request){
+bool threadpool<T>::append(T* request, int state){
     m_queuelocker.lock();
     if (m_workqueue.size() > m_max_request){
         m_queuelocker.unlock();
         return false;;
     }
+    request->m_state = state;
     m_workqueue.push_back(request);
     m_queuelocker.unlock();
     m_queuestat.post();
@@ -85,6 +86,8 @@ void threadpool<T>::run(){
         m_workqueue.pop_front();
         m_queuelocker.unlock();
         if (!request) continue;
-        request->read_once();
+        if (request->m_state == 0) request->read_once();
+        else if (request->m_state == 1) request->do_write();
+        
     }
 }
