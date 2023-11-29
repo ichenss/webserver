@@ -43,9 +43,6 @@ void web_server::event_listen(){
     http_parser::m_epollfd = m_epollfd;
     addfd(m_epollfd, m_listenfd, EPOLLIN);
 
-    http_parser::m_epollfd = m_epollfd;
-    addfd(m_epollfd, m_listenfd, EPOLLIN);
-
     utils::u_epollfd = m_epollfd;
 
     pipe(m_pipefd);
