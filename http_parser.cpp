@@ -13,7 +13,7 @@ const char *error_500_form = "There was an unusual problem serving the request f
 int http_parser::m_user_count = 0;
 int http_parser::m_epollfd = -1;
 
-void http_parser::init(int socket, char* root){
+void http_parser::init(int socket, char* root, sockaddr_in cliaddr){
     init();
     m_socket = socket;
     server_root = root;
@@ -398,6 +398,6 @@ void http_parser::removefd(int epfd, int fd){
         perror("epoll_ctl error");
         exit(1);
     }
-    printf("fd = %d, 以接触监n", fd);
+    printf("fd = %d, 以接触监听\n", fd);
     close(fd);
 }

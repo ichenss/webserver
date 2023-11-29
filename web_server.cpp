@@ -42,22 +42,47 @@ void web_server::event_listen(){
     m_epollfd = epoll_create(64);
     http_parser::m_epollfd = m_epollfd;
     addfd(m_epollfd, m_listenfd, EPOLLIN);
+
+    http_parser::m_epollfd = m_epollfd;
+    addfd(m_epollfd, m_listenfd, EPOLLIN);
+
+    utils::u_epollfd = m_epollfd;
+
+    pipe(m_pipefd);
+    utils::u_pipefd = m_pipefd;
+
+    addfd(m_epollfd, m_pipefd[0], EPOLLIN);
+
+    util.init(5);
+    util.addsig(SIGALRM, util.sig_handler);
+
+    alarm(util.m_TIMESLOT);
 }
 
 void web_server::event_loop(){
+    bool timeout = false;
     while(1){
         int num = epoll_wait(m_epollfd, events, 2000, -1);
         for (int i = 0; i < num; i++) {
             if (events[i].data.fd == m_listenfd){
                 // 处理监听套接字
                 deal_new_connect();
-            }else if (events[i].events & EPOLLIN) {
+            }
+            else if(m_pipefd[0] == events[i].data.fd && events[i].events & EPOLLIN){
+                deal_signal_event(timeout);
+            }
+            else if (events[i].events & EPOLLIN) {
                 // 处理读事件
                 deal_read_event(events[i].data.fd);
             }else if (events[i].events & EPOLLOUT){
                 // 处理写事件
                 deal_write_event(events[i].data.fd);
             }
+        }
+        if(timeout == true){
+            printf("检测链表中定时器事件是否超时\n");
+            util.timer_handler();
+            timeout = false;
         }
     }
 }
@@ -80,7 +105,7 @@ void web_server::deal_new_connect(){
         // 错误处理
     }
     printf("有新客户端连接\n");
-    users[connfd].init(connfd, m_root);
+    newtimer(connfd, m_root, cliaddr);
 }
 
 void web_server::deal_read_event(int socket){
@@ -94,3 +119,20 @@ void web_server::deal_write_event(int socket){
 void web_server::thread_pool(){
     m_pool = new threadpool<http_parser>(m_thread_num);
 }
+
+ void web_server::newtimer(int connfd, char* root, sockaddr_in client_address){
+    users[connfd].init(connfd, root,client_address);
+    timer* timernode = new timer;
+    timernode->user_data = &users[connfd];
+    timernode->cb_func = cb_func;
+    time_t cur = time(NULL);
+    timernode->expire = cur + TIME_OUT * 3;
+    util.m_timer_lst.add_timer(timernode);
+ }
+
+  void web_server::deal_signal_event(bool &timeout){
+    int ret;
+    char signal[1024];
+    ret = read(m_pipefd[0], signal, sizeof(signal));
+    if(ret > 0) timeout = true;
+ }
