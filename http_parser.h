@@ -137,5 +137,5 @@ private:
     char m_write_buf[1024];  // 写缓冲
     char m_real_file[200];  // 请求资源真实路径名
 };
-
+int setnonblocking(int fd);
 #endif

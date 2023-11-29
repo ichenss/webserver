@@ -1,7 +1,7 @@
 #include "web_server.h"
 
 web_server::web_server(){
-    users = new http_parser[2000];
+    users = new http_parser[MAX_USER];
     char path[200];
     getcwd(path, 200);
     // /home/yuhang/tiny_webserver/
@@ -50,16 +50,18 @@ void web_server::event_listen(){
 
     addfd(m_epollfd, m_pipefd[0], EPOLLIN);
 
+    // 初始化+信号捕捉
     util.init(5);
     util.addsig(SIGALRM, util.sig_handler);
 
+    // 开始循环监测
     alarm(util.m_TIMESLOT);
 }
 
 void web_server::event_loop(){
     bool timeout = false;
     while(1){
-        int num = epoll_wait(m_epollfd, events, 2000, -1);
+        int num = epoll_wait(m_epollfd, events, MAX_EVENTS, -1);
         for (int i = 0; i < num; i++) {
             if (events[i].data.fd == m_listenfd){
                 // 处理监听套接字
@@ -77,7 +79,7 @@ void web_server::event_loop(){
             }
         }
         if(timeout == true){
-            printf("检测链表中定时器事件是否超时\n");
+            //printf("检测链表中定时器事件是否超时\n");
             util.timer_handler();
             timeout = false;
         }
@@ -96,12 +98,14 @@ void web_server::deal_new_connect(){
     socklen_t clilen = sizeof(cliaddr);
     int connfd = accept(m_listenfd, (struct sockaddr*)&cliaddr, &clilen);
     if (connfd < 0) {
-        // 错误处理
+        perror("accept error");
+        exit(1);
     }
-    if (http_parser::m_user_count >= 2000) {
-        // 错误处理
+    if (http_parser::m_user_count >= MAX_USER) {
+        printf("当前以达到最大客户端连接\n");
+        return;
     }
-    printf("有新客户端连接\n");
+    //printf("有新客户端连接\n");
     newtimer(connfd, m_root, cliaddr);
 }
 

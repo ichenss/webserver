@@ -34,7 +34,7 @@ m_thread_number(thread_number), m_max_request(max_request), m_stop(false), m_thr
     if (!m_threads) throw std::exception();
     // 创建thread_number个线程，并设置为脱离线程
     for (int i = 0; i < thread_number; i++){
-        printf("create the %dth thread\n", i);
+        //printf("create the %dth thread\n", i);
         if (pthread_create(m_threads + i, NULL, worker, this) != 0){
             delete []m_threads;
             throw std::exception();

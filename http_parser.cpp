@@ -47,13 +47,13 @@ void http_parser::read_once(){
         exit(1);
     }
     else if (data_read == 0) {
-        printf("client break\n");
+        printf("客户端断开连接\n");
         removefd(m_epollfd, m_socket);
     }
     m_read_idx += data_read;
-    printf("------------------------\n");
-    write(1, m_read_buf, m_read_idx);
-    printf("------------------------\n");
+    //printf("------------------------\n");
+    //write(1, m_read_buf, m_read_idx);
+    //printf("------------------------\n");
     process();
 }
 
@@ -143,7 +143,7 @@ http_parser::HTTP_CODE http_parser::parser_request_line(char* text){
     }
     if (!m_url || m_url[0] != '/') return BAD_REQUEST;
     m_check_state = CHECK_STATE_HEADER;
-    printf("m_method: %d, m_url: %s, m_version: %s\n", m_method, m_url, m_version);
+    //printf("m_method: %d, m_url: %s, m_version: %s\n", m_method, m_url, m_version);
     return NO_REQUEST;
 }
 
@@ -160,20 +160,20 @@ http_parser::HTTP_CODE http_parser::parser_request_headers(char* text){
         text += strspn(text, " ");
         if (strcasecmp(text, "keep-alive") == 0){
             m_keep_alive = true;
-            printf("Connection: keep_alive\n");
+            //printf("Connection: keep_alive\n");
         }
     }
     else if (strncasecmp(text, "Content-length:", 15) == 0){
         text += 15;
         text += strspn(text, " ");
         m_content_length = atoi(text);
-        printf("Conten-length: %d\n", m_content_length);
+        //printf("Conten-length: %d\n", m_content_length);
     }
     else if (strncasecmp(text, "Host:", 5) == 0) {
         text += 5;
         text += strspn(text, " ");
         m_host = text;
-        printf("Host: %s\n", text);
+        //printf("Host: %s\n", text);
     }
     else {
         // ....
@@ -187,7 +187,7 @@ http_parser::HTTP_CODE http_parser::parser_content(char* text){
 }
 
 http_parser::HTTP_CODE http_parser::do_request(){
-    printf("HTTP 请求分析完毕，开始处理\n");
+    //printf("HTTP 请求分析完毕，开始处理\n");
     strcpy(m_real_file, server_root);
     int len = strlen(server_root);
     if (strlen(m_url) == 1 && m_url[0] == '/'){
@@ -196,7 +196,7 @@ http_parser::HTTP_CODE http_parser::do_request(){
     else{
         strncpy(m_real_file + len, m_url, 200 - len - 1);
     }
-    printf("m_real_file: %s\n", m_real_file);
+    //printf("m_real_file: %s\n", m_real_file);
     if (stat(m_real_file, &m_file_stat) < 0) return NO_RESOURCE;
     if (!(m_file_stat.st_mode & S_IROTH)) return FORBIDDEN_REQUEST;
     if (S_ISDIR(m_file_stat.st_mode)) return BAD_REQUEST;
@@ -321,7 +321,7 @@ bool http_parser::add_status_line(int status, const char* title){
 bool http_parser::add_content_type(){
     char file_type[32];
     char* p = strrchr(m_real_file, '.');
-    printf("----------------------%s\n", p);
+    //printf("----------------------%s\n", p);
     strcpy(file_type, p);
     if (strlen(file_type) == 0) return false;
     if (strcasecmp(file_type, ".jpg") == 0) {
@@ -350,7 +350,7 @@ bool http_parser::add_response(const char* format, ...){
     m_write_idx += len;
     va_end(arg_list);
 
-    printf("request:\n%s\n", m_write_buf);
+    //printf("request:\n%s\n", m_write_buf);
 
     return true;
 }
@@ -366,10 +366,9 @@ bool http_parser::do_write(){
     return true;
 }
 
-
 void http_parser::fdmode(int epfd, int fd, __uint32_t events){
     epoll_event event;
-    event.events = events | EPOLLONESHOT;
+    event.events = events | EPOLLONESHOT | EPOLLET;
     event.data.fd = fd;
     epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &event);
 }
@@ -377,7 +376,7 @@ void http_parser::fdmode(int epfd, int fd, __uint32_t events){
 void http_parser::close_conn(bool real_close){
     if (real_close && (m_socket != -1))
     {
-        printf("close: %d\n", m_socket);
+        //printf("close: %d\n", m_socket);
         removefd(m_epollfd, m_socket);
         m_socket = -1;
         m_user_count--;
@@ -388,8 +387,9 @@ void http_parser::addfd(int epfd, int fd, __uint32_t event){
     struct epoll_event ev;
     ev.data.fd = fd;
     // EPOLLONESHOT防止一个任务被多个线程处理 one loop per thread
-    ev.events = event | EPOLLONESHOT;
+    ev.events = event | EPOLLONESHOT | EPOLLET;
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
+    // setnonblocking(fd);
 }
 
 void http_parser::removefd(int epfd, int fd){
@@ -401,3 +401,12 @@ void http_parser::removefd(int epfd, int fd){
     printf("fd = %d, 以接触监听\n", fd);
     close(fd);
 }
+
+//对文件描述符设置非阻塞
+// int setnonblocking(int fd)
+// {
+//     int old_option = fcntl(fd, F_GETFL);
+//     int new_option = old_option | O_NONBLOCK;
+//     fcntl(fd, F_SETFL, new_option);
+//     return old_option;
+// }

@@ -4,6 +4,8 @@
 #include "threadpool.h"
 #include "utils.h"
 #define TIME_OUT 5
+#define MAX_EVENTS 10000
+#define MAX_USER 65536
 class web_server{
 public:
     web_server();
@@ -27,7 +29,7 @@ public:
     int m_listenfd;
     int m_epollfd;
     char* m_root;
-    struct epoll_event events[2000];
+    struct epoll_event events[MAX_EVENTS];
     http_parser* users;
 
     threadpool<http_parser>* m_pool;
