@@ -1,3 +1,5 @@
+#ifndef _HTTP_PARSER_H
+#define _HTTP_PARSER_H
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -15,9 +17,10 @@
 #include <stdarg.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
-
+#include "timer.h"
 using namespace std;
 
+class timer;
 class http_parser{
 public:
     // HTTP请求方法
@@ -88,19 +91,24 @@ public:
 
     int bytes_to_send; // 响应头+响应正文总长
 
+    int m_state;  // 判断读or写事件
+
     static int m_epollfd;  // epfd
     static int m_user_count;
 
+    timer* m_timer;
+
 public:
     void init();
-    void init(int socket, char* m_root);
+    void init(int socket, char* m_root, sockaddr_in cliaddr);
     void read_once();
     void process();
     HTTP_CODE process_read();
     bool process_write(HTTP_CODE ret);
     LINE_STATUS parse_line();
     void close_conn(bool real_close);
-    void do_write();
+    bool do_write();
+    void fdmode(int epfd, int fd, __uint32_t events);
     HTTP_CODE do_request();
     
 
@@ -129,3 +137,5 @@ private:
     char m_write_buf[1024];  // 写缓冲
     char m_real_file[200];  // 请求资源真实路径名
 };
+int setnonblocking(int fd);
+#endif

@@ -9,8 +9,12 @@ int main(int argc, char* argv[]){
     }
 
     int port = atoi(argv[1]);
+    
     web_server webserver;
-    webserver.init(port);
+    webserver.init(port, 8);
+    webserver.thread_pool();
+
     webserver.event_listen();
     webserver.event_loop();
+    return 0;
 }
