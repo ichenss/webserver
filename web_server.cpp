@@ -89,7 +89,7 @@ void web_server::event_loop(){
 void web_server::addfd(int epfd, int fd, __uint32_t event){
     struct epoll_event ev;
     ev.data.fd = fd;
-    ev.events = event;
+    ev.events = event | EPOLLET;
     epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
 }
 
